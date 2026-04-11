@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>姓名鑑定分析</title>
+    <style>
+        body { font-family: sans-serif; background-color: white; padding: 20px; text-align: center; }
+        .input-box { border: 1px solid #ccc; border-radius: 10px; padding: 15px; max-width: 400px; margin: 0 auto 20px; }
+        input { width: 80%; padding: 10px; margin: 5px; text-align: center; font-size: 18px; border: 1px solid #ddd; border-radius: 5px; }
+        button { width: 85%; padding: 12px; background-color: #800000; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; }
+        .result-frame { border: 2px solid maroon; border-radius: 10px; padding: 20px; max-width: 450px; margin: 0 auto; display: none; background-color: #FFFBFA; }
+        table { margin: 0 auto; border-collapse: collapse; }
+        td { padding: 10px; vertical-align: middle; text-align: center; }
+        .char-text { font-size: 28px; font-weight: bold; }
+        .ge-text { font-size: 20px; color: #483D8B; font-weight: bold; }
+        .arrow-box { color: red; font-weight: bold; height: 50px; }
+        .total-box { font-size: 24px; color: darkred; font-weight: bold; margin-top: 15px; border-top: 1px solid gray; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>姓名鑑定分析</h2>
+    <div class="input-box">
+        <input type="text" id="lName" placeholder="姓">
+        <input type="text" id="fName" placeholder="名">
+        <button onclick="analyze()">開始鑑定分析</button>
+    </div>
+
+    <div id="resultFrame" class="result-frame">
+        <table id="resultTable"></table>
+        <div id="totalBox" class="total-box"></div>
+    </div>
+
+    <script>
+        let dictionary = {};
+
+        // 載入字典
+        fetch('Dictionary.json')
+            .then(response => response.json())
+            .then(data => {
+                for (let key in data) {
+                    dictionary[data[key].text] = data[key].strokes_total;
+                }
+                console.log("字典載入成功");
+            });
+
+        function getStrokes(char) {
+            const special = {"諸": 16, "葛": 15, "亮": 9, "陳": 16, "妍": 9, "庭": 10, "郁": 13};
+            if (special[char]) return special[char];
+            return dictionary[char] || 0;
+        }
+
+        function getWX(n) {
+            const t = n % 10;
+            if (t == 1 || t == 2) return "木";
+            if (t == 3 || t == 4) return "火";
+            if (t == 5 || t == 6) return "土";
+            if (t == 7 || t == 8) return "金";
+            return "水";
+        }
+
+        function getRelation(up, down) {
+            const wx = [0,1,2,3,4]; // 木火土金水
+            const getIdx = (n) => {
+                const t = n % 10;
+                return (t==1||t==2)?0 : (t==3||t==4)?1 : (t==5||t==6)?2 : (t==7||t==8)?3 : 4;
+            };
+            const u = getIdx(up), d = getIdx(down);
+            if (u == d) return null;
+            if ((u + 1) % 5 == d) return { type: '生', dir: '下' };
+            if ((d + 1) % 5 == u) return { type: '生', dir: '上' };
+            const ke = [0, 2, 4, 1, 3]; // 木土水火金
+            const ui = ke.indexOf(u), di = ke.indexOf(d);
+            if ((ui + 1) % 5 == di) return { type: '剋', dir: '下' };
+            if ((di + 1) % 5 == ui) return { type: '剋', dir: '上' };
+            return null;
+        }
+
+        function drawArrow(info) {
+            if (!info) return `<div style="height:50px"></div>`;
+            const isKe = info.type === '剋';
+            const head = info.dir === '下' ? (isKe ? '▼' : '↓') : (isKe ? '▲' : '↑');
+            const line = `<div style="width:1.5px; height:25px; background:red; margin:0 auto;"></div>`;
+            return `<div class="arrow-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                ${info.dir === '上' ? head + line : line + head}
+            </div>`;
+        }
+
+        function analyze() {
+            const last = document.getElementById('lName').value.trim();
+            const first = document.getElementById('fName').value.trim();
+            if (!last || !first) return;
+
+            const l1 = getStrokes(last[0]), l2 = last.length > 1 ? getStrokes(last[1]) : 0;
+            const f1 = getStrokes(first[0]), f2 = first.length > 1 ? getStrokes(first[1]) : 0;
+
+            const tian = last.length == 1 ? l1 + 1 : l1 + l2;
+            const ren = (l1 + l2) + f1;
+            const di = first.length == 1 ? f1 + 1 : f1 + f2;
+            const zong = l1 + l2 + f1 + f2;
+
+            const table = document.getElementById('resultTable');
+            table.innerHTML = "";
+
+            // 構建行
+            let html = "";
+            // 姓氏列
+            html += `<tr><td>${l1}</td><td class="char-text">${last[0]}</td><td></td><td></td><td></td></tr>`;
+            if (last.length > 1) {
+                html += `<tr><td>${l2}</td><td class="char-text">${last[1]}</td><td class="ge-text">${tian}</td><td class="ge-text">${getWX(tian)}</td><td class="ge-text">天格</td></tr>`;
+            } else {
+                html += `<tr><td></td><td></td><td class="ge-text">${tian}</td><td class="ge-text">${getWX(tian)}</td><td class="ge-text">天格</td></tr>`;
+            }
+
+            // 箭頭 1
+            html += `<tr><td colspan="2"></td><td></td><td>${drawArrow(getRelation(tian, ren))}</td><td></td></tr>`;
+
+            // 人格列
+            html += `<tr><td>${f1}</td><td class="char-text">${first[0]}</td><td class="ge-text">${ren}</td><td class="ge-text">${getWX(ren)}</td><td class="ge-text">人格</td></tr>`;
+
+            // 箭頭 2
+            html += `<tr><td colspan="2"></td><td></td><td>${drawArrow(getRelation(ren, di))}</td><td></td></tr>`;
+
+            // 地格列
+            if (first.length > 1) {
+                html += `<tr><td>${f2}</td><td class="char-text">${first[1]}</td><td class="ge-text">${di}</td><td class="ge-text">${getWX(di)}</td><td class="ge-text">地格</td></tr>`;
+            } else {
+                html += `<tr><td>1</td><td></td><td class="ge-text">${di}</td><td class="ge-text">${getWX(di)}</td><td class="ge-text">地格</td></tr>`;
+            }
+
+            table.innerHTML = html;
+            document.getElementById('totalBox').innerText = "總格：" + zong;
+            document.getElementById('resultFrame').style.display = "block";
+        }
+    </script>
+</body>
+</html>
