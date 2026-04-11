@@ -34,16 +34,19 @@
     <script>
         let dictionary = {};
 
-        // 載入字典
-        fetch('Dictionary.json')
-            .then(response => response.json())
-            .then(data => {
-                for (let key in data) {
-                    dictionary[data[key].text] = data[key].strokes_total;
-                }
-                console.log("字典載入成功");
+        // 改為同時讀取 a.txt, b.txt, c.txt
+        Promise.all([
+            fetch('a.txt').then(res => res.json()),
+            fetch('b.txt').then(res => res.json()),
+            fetch('c.txt').then(res => res.json())
+        ]).then(results => {
+            results.forEach(arr => {
+                arr.forEach(item => {
+                    dictionary[item.text] = item.strokes_total;
+                });
             });
-
+            console.log("所有字典片段載入成功");
+        }).catch(err => console.error("載入失敗:", err));
         function getStrokes(char) {
             const special = {"諸": 16, "葛": 15, "亮": 9, "陳": 16, "妍": 9, "庭": 10, "郁": 13};
             if (special[char]) return special[char];
