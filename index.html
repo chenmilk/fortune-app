@@ -34,21 +34,21 @@
     <script>
         let dictionary = {};
 
-        // 同時抓取 a.txt, b.txt, c.txt
+        // 改為同時載入 a.txt 和 b.txt
         Promise.all([
             fetch('a.txt').then(res => res.json()),
-            fetch('b.txt').then(res => res.json()),
-            fetch('c.txt').then(res => res.json())
+            fetch('b.txt').then(res => res.json())
         ]).then(results => {
             results.forEach(obj => {
-                // 將每個片段的內容合併到總字典中
                 for (let key in obj) {
-                    // 取得該字下的 strokes_total 數值
+                    // 根據你 JSON 的結構，抓取 strokes_total
                     dictionary[key] = obj[key].strokes_total;
                 }
             });
-            console.log("所有字典片段載入並合併成功！");
-        }).catch(err => console.error("載入失敗:", err));
+            console.log("雙字典合併成功！目前字數：" + Object.keys(dictionary).length);
+        }).catch(err => {
+            console.error("載入失敗，可能是 JSON 格式切斷處有誤:", err);
+        });
         function getStrokes(char) {
             const special = {"諸": 16, "葛": 15, "亮": 9, "陳": 16, "妍": 9, "庭": 10, "郁": 13};
             if (special[char]) return special[char];
