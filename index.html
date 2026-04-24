@@ -47,7 +47,36 @@
         const btn = document.getElementById('btnRun');
         const status = document.getElementById('status');
 
-        // 正確載入雙檔案邏輯
+        // 核心邏輯：優先修正筆劃表
+        function getStrokes(char) {
+            const customStrokes = {
+                '互': 4, '片': 4, '氏': 4, '及': 4, '之': 4, '王': 4,
+                '瓦': 5, '台': 5,
+                '巡': 6, '卉': 6,
+                '廷': 7, '初': 7, '秀': 7, '成': 7,
+                '亞': 8, '武': 8, '昆': 8, '沛': 8, '牧': 8, '弢': 8, '去': 8, '幺': 8,
+                '政': 9, '盈': 9, '建': 9, '妍': 9, '致': 9, '修': 9,
+                '哲': 10, '卿': 10, '娜': 10, '育': 10,
+                '屏': 11, '胡': 11, '強': 11, '迎': 11, '閏': 11, '一': 11, '弓': 11, '丿': 11,
+                '傑': 12, '黃': 12, '盛': 12, '勝': 12, '為': 12, '能': 12, '胸': 12, '涵': 12,
+                '溫': 13, '新': 13, '敬': 13, '雋': 13, '淵': 13,
+                '郎': 14, '鳳': 14, '萍': 14, '慈': 14, '嘉': 14,
+                '萬': 15, '興': 15, '霈': 15, '數': 15, '寬': 15, '豎': 15, '履': 15,
+                '學': 16, '樺': 16, '璇': 16, '閣': 16, '潔': 16, '頤': 16,
+                '鴻': 17, '臨': 17, '燦': 17,
+                '戴': 18, '豐': 18, '珞': 18, '魏': 18,
+                '蕭': 19, '覺': 19, '贊': 19,
+                '羅': 20, '寶': 20, '藏': 20, '譽': 20, '馨': 20,
+                '屬': 21,
+                '龔': 22, '響': 22, '霽': 22,
+                '蘭': 23, '麟': 23,
+                '艷': 24
+            };
+
+            if (customStrokes[char]) return customStrokes[char];
+            return dictionary[char] || 0;
+        }
+
         async function loadDict() {
             try {
                 const files = ['a.txt', 'b.txt'];
@@ -69,10 +98,6 @@
         }
         loadDict();
 
-        function getStrokes(char) {
-            return dictionary[char] || 0;
-        }
-
         function getWX(n) {
             const t = n % 10;
             const map = {1:"木", 2:"木", 3:"火", 4:"火", 5:"土", 6:"土", 7:"金", 8:"金", 9:"水", 0:"水"};
@@ -87,12 +112,8 @@
             };
             const u = getIdx(up), d = getIdx(down);
             if (u == d) return { type: "無", dir: "" };
-            
-            // 相生 (木0 火1 土2 金3 水4)
             if ((u + 1) % 5 == d) return { type: "生", dir: "下" };
             if ((d + 1) % 5 == u) return { type: "生", dir: "上" };
-            
-            // 相剋 (木0 土2 水4 火1 金3)
             const ke = [0, 2, 4, 1, 3];
             const ui = ke.indexOf(u), di = ke.indexOf(d);
             if ((ui + 1) % 5 == di) return { type: "剋", dir: "下" };
@@ -130,7 +151,6 @@
             table.innerHTML = "";
             let html = "";
 
-            // 姓氏與天格 (強制等間距)
             if (last.length == 1) {
                 html += `<tr class="char-row"><td class="stroke-text">${l1}</td><td class="char-text">${last[0]}</td><td class="num-text">${tian}</td><td class="wx-text">${getWX(tian)}</td><td class="ge-label">天格</td></tr>`;
             } else {
@@ -138,16 +158,10 @@
                 html += `<tr class="char-row"><td class="stroke-text">${l2}</td><td class="char-text">${last[1]}</td><td class="num-text">${tian}</td><td class="wx-text">${getWX(tian)}</td><td class="ge-label">天格</td></tr>`;
             }
 
-            // 天格-人格 箭頭
             html += `<tr class="arrow-row"><td></td><td></td><td></td><td>${createArrowSvg(getRelationInfo(tian, ren))}</td><td></td></tr>`;
-
-            // 名字1 (人格)
             html += `<tr class="char-row"><td class="stroke-text">${f1}</td><td class="char-text">${first[0]}</td><td class="num-text">${ren}</td><td class="wx-text">${getWX(ren)}</td><td class="ge-label">人格</td></tr>`;
-
-            // 人格-地格 箭頭
             html += `<tr class="arrow-row"><td></td><td></td><td></td><td>${createArrowSvg(getRelationInfo(ren, di))}</td><td></td></tr>`;
 
-            // 名字2 (地格)
             if (first.length > 1) {
                 html += `<tr class="char-row"><td class="stroke-text">${f2}</td><td class="char-text">${first[1]}</td><td class="num-text">${di}</td><td class="wx-text">${getWX(di)}</td><td class="ge-label">地格</td></tr>`;
             } else {
