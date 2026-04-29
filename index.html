@@ -78,22 +78,27 @@
             return dictionary[char] || 0;
         }
 
+        // 維持你原本的 loadDict 名稱，這是針對瘦身後檔案的最新版本
         async function loadDict() {
             try {
-                const files = ['a.txt', 'b.txt'];
+                // 檔名改成 slim_a.txt, slim_b.txt
+                const files = ['slim_a.txt', 'slim_b.txt'];
                 for (const file of files) {
                     const response = await fetch(file);
                     if (!response.ok) throw new Error(file + " 讀取失敗");
                     const data = await response.json();
+                    
+                    // 因為檔案已經瘦身，data 直接就是 {"字": 筆劃}
+                    // 所以不需要再寫 .strokes_total，直接指定即可
                     for (let key in data) {
-                        dictionary[key] = data[key].strokes_total;
+                        dictionary[key] = data[key];
                     }
                 }
                 const count = Object.keys(dictionary).length;
                 status.innerText = "✅ 字典已準備就緒 (共 " + count + " 字)";
                 btn.disabled = false;
             } catch (err) {
-                status.innerHTML = "❌ <span style='color:red'>字典載入異常，請確認 a.txt 與 b.txt 是否為正確 JSON 格式</span>";
+                status.innerHTML = "❌ <span style='color:red'>字典載入異常，請確認 slim_a.txt 與 slim_b.txt 是否存在</span>";
                 console.error(err);
             }
         }
